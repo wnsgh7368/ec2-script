@@ -2,7 +2,7 @@
 
 팀에서 공용으로 사용하는 AWS EC2 인스턴스를 간단한 명령어로 시작하고 종료하기 위한 CLI입니다.
 
-EC2를 시작하면 변경된 Public IP를 자동으로 조회하여 로컬 `~/.ssh/config`의 `HostName`도 자동으로 변경합니다.
+EC2를 시작하면 변경된 Public IP를 자동으로 조회하여 로컬 `~/.ssh/config`의 `HostName`을 자동으로 갱신합니다. 해당 Host 블록이 아직 없으면 `User`/`IdentityFile`까지 포함해 새로 만들어 줍니다.
 
 ## Architecture
 
@@ -58,6 +58,15 @@ chmod +x install.sh
 ./install.sh
 ```
 
+설치 도중 SSH 접속에 사용할 key(`.pem`) 경로를 물어봅니다.
+
+```text
+SSH_KEY> ~/.ssh/star23.pem
+```
+
+입력한 경로는 개인 설정 파일 `~/.ec2-cli/local.sh`에 저장되며, Git으로 공유되지 않습니다.
+바로 모른다면 그냥 Enter로 넘어간 뒤 나중에 `~/.ec2-cli/local.sh`에서 `SSH_KEY`를 수정하면 됩니다.
+
 설치 후 터미널을 다시 실행하거나 다음 명령어를 실행합니다.
 
 ```bash
@@ -80,6 +89,12 @@ ec2 run app
 ec2 run mysql
 ```
 
+### PostgreSQL 시작
+
+```bash
+ec2 run postgres
+```
+
 ### 전체 시작
 
 ```bash
@@ -96,6 +111,12 @@ ec2 stop app
 
 ```bash
 ec2 stop mysql
+```
+
+### PostgreSQL 종료
+
+```bash
+ec2 stop postgres
 ```
 
 ### 전체 종료
@@ -117,7 +138,7 @@ Running 상태 대기
       ↓
 Public IP 조회
       ↓
-~/.ssh/config HostName 수정
+~/.ssh/config 갱신 (블록 없으면 생성)
       ↓
 완료
 ```
@@ -126,51 +147,67 @@ Public IP 조회
 
 ## SSH Config
 
-각 팀원의 `~/.ssh/config`에는 `config.sh`에서 지정한 Host가 존재해야 합니다.
+`ec2 run`을 실행하면 `~/.ssh/config`가 자동으로 갱신됩니다.
 
-예시:
+- 해당 `Host` 블록이 있으면 → `HostName`만 새 Public IP로 교체 (`User`/`IdentityFile` 등 기존 값은 그대로 유지)
+- 해당 `Host` 블록이 없으면 → 아래처럼 블록을 새로 생성
 
 ```text
 Host star23-app
-    HostName 1.2.3.4
+    HostName <자동 입력>
     User ubuntu
-    IdentityFile ~/.ssh/example.pem
-
-Host star23-mysql
-    HostName 5.6.7.8
-    User ubuntu
-    IdentityFile ~/.ssh/example.pem
-
-Host star23-postgres
-    HostName 5.6.7.8
-    User ubuntu
-    IdentityFile ~/.ssh/example.pem
+    IdentityFile <local.sh 의 SSH_KEY>
 ```
 
-`HostName`은 EC2를 시작할 때 자동으로 변경되므로 초기 값은 중요하지 않습니다.
+`User`는 `config.sh`의 `SSH_USER`(기본값 `ubuntu`), `IdentityFile`은 각자 `~/.ec2-cli/local.sh`에 저장한 `SSH_KEY` 경로가 사용됩니다.
 
-단, `Host` 이름은 `config.sh`와 동일해야 합니다. 기본 값은 다음과 같습니다. .ssh/config를 위처럼 작성하셨다면 수정하실 필요 없습니다.
+따라서 팀원은 `~/.ssh/config`를 미리 손볼 필요가 없습니다. 설치 시 `SSH_KEY`만 지정해 두면 첫 `ec2 run`에서 블록이 알아서 만들어집니다.
+
+`Host` 이름은 `config.sh`의 값과 동일하게 관리되며, 기본값은 다음과 같습니다.
 
 ```bash
-APP_SSH_HOST="star23-app"
-MYSQL_SSH_HOST="star23-mysql"
+APP_HOST="star23-app"
+MYSQL_HOST="star23-mysql"
+POSTGRES_HOST="star23-postgres"
 ```
+
+> 참고: 팀원 모두 하나의 공용 key(`.pem`)를 사용하는 것을 전제로 합니다. 서비스별로 key가 다르다면 `local.sh`에서 서비스별로 나눠 관리해야 합니다.
 
 ## Configuration
 
-공용 EC2 정보는 `config.sh`에서 관리합니다.
+설정은 두 파일로 나뉩니다.
+
+### config.sh (팀 공용, Git 관리)
+
+공용 EC2 정보를 관리합니다.
 
 ```bash
 REGION="ap-northeast-2"
 
 APP_ID="i-xxxxxxxxxxxxxxxxx"
 MYSQL_ID="i-xxxxxxxxxxxxxxxxx"
+POSTGRES_ID="i-xxxxxxxxxxxxxxxxx"
 
-APP_SSH_HOST="app"
-MYSQL_SSH_HOST="mysql"
+APP_HOST="star23-app"
+MYSQL_HOST="star23-mysql"
+POSTGRES_HOST="star23-postgres"
+
+SSH_USER="ubuntu"
 ```
 
 해당 EC2들은 팀원 모두 동일한 인스턴스를 사용하므로 Repository에서 공용으로 관리합니다.
+
+### local.sh (개인별, Git 미포함)
+
+`~/.ec2-cli/local.sh`에 개인마다 다른 값을 저장합니다. 설치 시 자동 생성되며 Git으로 공유되지 않습니다.
+
+```bash
+# SSH key(.pem) 경로
+SSH_KEY="$HOME/.ssh/star23.pem"
+
+# 접속 계정을 팀 기본값과 다르게 쓰려면 override
+# SSH_USER="ubuntu"
+```
 
 AWS Access Key, Secret Access Key 등의 인증 정보는 Repository에 저장하지 않습니다.
 

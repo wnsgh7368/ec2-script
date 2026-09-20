@@ -33,6 +33,37 @@ cp -R "$SOURCE_DIR/scripts" "$INSTALL_DIR/"
 cp "$SOURCE_DIR/config.sh" "$INSTALL_DIR/config.sh"
 
 # =====================
+# 개인 설정 (local.sh)
+#  - SSH key(.pem) 경로 등 개인별 값
+#  - git 으로 공유하지 않으며, 재설치 시 덮어쓰지 않음
+# =====================
+
+if [ ! -f "$INSTALL_DIR/local.sh" ]; then
+
+  echo ""
+  echo "SSH 접속에 사용할 key(.pem) 경로를 입력하세요."
+  echo "예: ~/.ssh/star23.pem   (없으면 그냥 Enter, 나중에 local.sh 에서 설정 가능)"
+  printf "SSH_KEY> "
+  read -r KEY_PATH < /dev/tty || KEY_PATH=""
+
+  # ~ 를 실제 홈 경로로 확장
+  KEY_PATH="${KEY_PATH/#\~/$HOME}"
+
+  cat > "$INSTALL_DIR/local.sh" <<EOF
+#!/bin/bash
+
+# 개인 설정 (git 미포함)
+# SSH 접속 계정을 팀 기본값과 다르게 쓰려면 아래 주석을 풀어 override 하세요.
+# SSH_USER="ubuntu"
+
+# SSH key(.pem) 경로
+SSH_KEY="$KEY_PATH"
+EOF
+
+  echo "local.sh 생성됨: $INSTALL_DIR/local.sh"
+fi
+
+# =====================
 # 실행 권한 부여
 # =====================
 
