@@ -125,6 +125,22 @@ ec2 stop postgres
 ec2 stop all
 ```
 
+## SSH Config 갱신 (conn)
+
+`ec2 run`은 **인스턴스를 켠 사람의** `~/.ssh/config`만 갱신합니다.
+따라서 이미 다른 팀원이 켜 둔 인스턴스에 접속하려는 사람은,
+인스턴스를 다시 켤 필요 없이 `ec2 conn`으로 현재 Public IP만 가져와 자신의 SSH Config를 맞출 수 있습니다.
+
+```bash
+ec2 conn app
+ec2 conn mysql
+ec2 conn postgres
+ec2 conn all
+```
+
+`ec2 conn`은 인스턴스를 **시작하지 않고**, 실행 중(`running`)인 경우에만 Public IP를 조회해 `~/.ssh/config`를 갱신합니다.
+인스턴스가 꺼져 있으면 먼저 `ec2 run`으로 켜야 한다고 안내합니다.
+
 ## EC2 Start Process
 
 `ec2 run`을 실행하면 다음 과정이 자동으로 수행됩니다.

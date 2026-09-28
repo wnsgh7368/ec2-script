@@ -27,6 +27,15 @@ case "$COMMAND" in
     "$ROOT_DIR/scripts/stop.sh" "$TARGET"
     ;;
 
+  conn)
+    if [ -z "$TARGET" ]; then
+      echo "Usage: ec2 conn <app|mysql|postgres|all>"
+      exit 1
+    fi
+
+    "$ROOT_DIR/scripts/conn.sh" "$TARGET"
+    ;;
+
   *)
     echo ""
     echo "EC2 CLI"
@@ -39,6 +48,10 @@ case "$COMMAND" in
     echo "  ec2 stop app"
     echo "  ec2 stop mysql"
     echo "  ec2 stop all"
+    echo ""
+    echo "  ec2 conn app       # 켜져 있는 인스턴스의 IP 로 내 ssh config 갱신"
+    echo "  ec2 conn mysql"
+    echo "  ec2 conn all"
     echo ""
     exit 1
     ;;
